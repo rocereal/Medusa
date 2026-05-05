@@ -4,6 +4,7 @@ loadEnv(process.env.NODE_ENV, process.cwd());
 
 module.exports = defineConfig({
   admin: {
+    disable: process.env.DISABLE_ADMIN === 'true',
     backendUrl:
       process.env.BACKEND_URL ?? 'https://sofa-society-starter.medusajs.app',
     storefrontUrl: process.env.STOREFRONT_URL,
