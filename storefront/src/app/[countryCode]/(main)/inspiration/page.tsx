@@ -1,4 +1,4 @@
-import { Metadata } from "next"
+﻿import { Metadata } from "next"
 import Image from "next/image"
 import { StoreRegion } from "@medusajs/types"
 import { listRegions } from "@lib/data/regions"
@@ -11,25 +11,31 @@ export const metadata: Metadata = {
   description: "Get inspired by our latest collections",
 }
 
+export const dynamicParams = true
+
 export async function generateStaticParams() {
-  const countryCodes = await listRegions().then((regions: StoreRegion[]) =>
-    regions.flatMap((r) =>
-      r.countries
-        ? r.countries
-            .map((c) => c.iso_2)
-            .filter(
-              (value): value is string =>
-                typeof value === "string" && Boolean(value)
-            )
-        : []
+  try {
+    const countryCodes = await listRegions().then((regions: StoreRegion[]) =>
+      regions.flatMap((r) =>
+        r.countries
+          ? r.countries
+              .map((c) => c.iso_2)
+              .filter(
+                (value): value is string =>
+                  typeof value === "string" && Boolean(value)
+              )
+          : []
+      )
     )
-  )
 
-  const staticParams = countryCodes.map((countryCode) => ({
-    countryCode,
-  }))
+    const staticParams = countryCodes.map((countryCode) => ({
+      countryCode,
+    }))
 
-  return staticParams
+    return staticParams
+  } catch {
+    return []
+  }
 }
 
 export default function InspirationPage() {
