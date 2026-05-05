@@ -1,9 +1,9 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "yarn install && yarn build"
+buildCommand = "yarn install"
 
 [deploy]
-preDeployCommand = "yarn medusa db:migrate"
+preDeployCommand = "yarn build && yarn medusa db:migrate"
 startCommand = "yarn start"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
