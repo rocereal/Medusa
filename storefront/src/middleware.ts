@@ -1,5 +1,4 @@
 import { HttpTypes } from "@medusajs/types"
-import { notFound } from "next/navigation"
 import { NextRequest, NextResponse } from "next/server"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
@@ -18,29 +17,34 @@ async function getRegionMap() {
     !regionMap.keys().next().value ||
     regionMapUpdated < Date.now() - 3600 * 1000
   ) {
-    // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
-    const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
-      headers: {
-        "x-publishable-api-key": PUBLISHABLE_API_KEY!,
-      },
-      next: {
-        revalidate: 3600,
-        tags: ["regions"],
-      },
-    }).then((res) => res.json())
-
-    if (!regions?.length) {
-      notFound()
-    }
-
-    // Create a map of country codes to regions.
-    regions.forEach((region: HttpTypes.StoreRegion) => {
-      region.countries?.forEach((c) => {
-        regionMapCache.regionMap.set(c.iso_2 ?? "", region)
+    try {
+      // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
+      const response = await fetch(`${BACKEND_URL}/store/regions`, {
+        headers: {
+          "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+        },
+        next: {
+          revalidate: 3600,
+          tags: ["regions"],
+        },
       })
-    })
 
-    regionMapCache.regionMapUpdated = Date.now()
+      const data = await response.json()
+      const regions = data?.regions
+
+      if (regions?.length) {
+        // Create a map of country codes to regions.
+        regions.forEach((region: HttpTypes.StoreRegion) => {
+          region.countries?.forEach((c) => {
+            regionMapCache.regionMap.set(c.iso_2 ?? "", region)
+          })
+        })
+
+        regionMapCache.regionMapUpdated = Date.now()
+      }
+    } catch {
+      // If Medusa is unreachable, regionMap stays empty and DEFAULT_REGION is used
+    }
   }
 
   return regionMapCache.regionMap
@@ -72,16 +76,14 @@ async function getCountryCode(
       countryCode = DEFAULT_REGION
     } else if (regionMap.keys().next().value) {
       countryCode = regionMap.keys().next().value
+    } else {
+      countryCode = DEFAULT_REGION
     }
 
     return countryCode
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error(
-        "Middleware.ts: Error getting the country code. Did you set up regions in your Medusa Admin and define a NEXT_PUBLIC_MEDUSA_BACKEND_URL environment variable?"
-      )
-    }
+    return DEFAULT_REGION
   }
 }
 
