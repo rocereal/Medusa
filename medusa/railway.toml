@@ -3,7 +3,7 @@ builder = "NIXPACKS"
 buildCommand = "yarn install"
 
 [deploy]
-preDeployCommand = "NODE_OPTIONS=--max-old-space-size=4096 yarn build && yarn medusa db:migrate && yarn medusa exec ./src/scripts/create-admin.ts"
+preDeployCommand = "NODE_OPTIONS=--max-old-space-size=4096 yarn build && yarn medusa db:migrate && yarn medusa exec ./src/scripts/create-admin.ts && yarn seed"
 startCommand = "yarn start"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
