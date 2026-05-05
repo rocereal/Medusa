@@ -3,8 +3,6 @@ import { IPaymentModuleService } from "@medusajs/framework/types";
 import { Modules } from "@medusajs/framework/utils";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_API_KEY);
-
 export const POST = async (
   req: MedusaStoreRequest<{
     session_id: string;
@@ -12,6 +10,7 @@ export const POST = async (
   }>,
   res: MedusaResponse
 ) => {
+  const stripe = new Stripe(process.env.STRIPE_API_KEY);
   const paymentModuleService: IPaymentModuleService = req.scope.resolve(
     Modules.PAYMENT
   );
