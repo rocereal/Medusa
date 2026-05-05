@@ -4,7 +4,7 @@ import {
 } from "@medusajs/framework/types"
 import { Modules } from "@medusajs/framework/utils"
 
-export default async function createAdmin({ container }) {
+export default async function createAdmin({ container }: { container: any }) {
   const email = process.env.ADMIN_EMAIL
   const password = process.env.ADMIN_PASSWORD
 
@@ -22,10 +22,15 @@ export default async function createAdmin({ container }) {
     return
   }
 
-  const { authIdentity } = await authService.register("emailpass", {
-    entity_id: email,
-    password,
-  })
+  const { authIdentity, success, error } = await authService.register(
+    "emailpass",
+    { body: { email, password } }
+  )
+
+  if (!success || !authIdentity) {
+    console.log("[create-admin] Auth register failed:", error)
+    return
+  }
 
   const user = await userService.createUsers({ email })
 
