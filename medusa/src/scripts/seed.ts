@@ -18,6 +18,7 @@ import {
 import {
   ExecArgs,
   IFulfillmentModuleService,
+  IRegionModuleService,
   ISalesChannelModuleService,
   IStoreModuleService,
 } from '@medusajs/framework/types';
@@ -43,6 +44,14 @@ async function getImageUrlContent(url: string) {
 
 export default async function seedDemoData({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER);
+
+  const regionModuleService: IRegionModuleService = container.resolve(Modules.REGION);
+  const existingRegions = await regionModuleService.listRegions({ name: 'Europe' });
+  if (existingRegions.length > 0) {
+    logger.info('[seed] Europe region already exists, skipping seed.');
+    return;
+  }
+
   const remoteLink = container.resolve(ContainerRegistrationKeys.LINK);
   const fulfillmentModuleService: IFulfillmentModuleService = container.resolve(
     Modules.FULFILLMENT,
@@ -55,6 +64,16 @@ export default async function seedDemoData({ container }: ExecArgs) {
   const fashionModuleService: FashionModuleService = container.resolve(
     'fashionModuleService',
   );
+
+  async function safeUploadFiles(files: any[]) {
+    try {
+      const { result } = await uploadFilesWorkflow(container).run({ input: { files } });
+      return result;
+    } catch (err) {
+      logger.warn(`[seed] File upload failed: ${err?.message}. Continuing without images.`);
+      return [];
+    }
+  }
 
   const countries = ['hr', 'gb', 'de', 'dk', 'se', 'fr', 'es', 'it'];
 
@@ -88,7 +107,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
           name: 'Europe',
           currency_code: 'eur',
           countries,
-          payment_providers: ['pp_stripe_stripe'],
+          payment_providers: [],
         },
       ],
     },
@@ -429,30 +448,24 @@ export default async function seedDemoData({ container }: ExecArgs) {
     },
   });
 
-  const [sofasImage, armChairsImage] = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
-          {
-            access: 'public',
-            filename: 'sofas.png',
-            mimeType: 'image/png',
-            content: await getImageUrlContent(
-              'https://assets.agilo.com/fashion-starter/product-types/sofas/image.png',
-            ),
-          },
-          {
-            access: 'public',
-            filename: 'arm-chairs.png',
-            mimeType: 'image/png',
-            content: await getImageUrlContent(
-              'https://assets.agilo.com/fashion-starter/product-types/arm-chairs/image.png',
-            ),
-          },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  const [sofasImage, armChairsImage] = await safeUploadFiles([
+    {
+      access: 'public',
+      filename: 'sofas.png',
+      mimeType: 'image/png',
+      content: await getImageUrlContent(
+        'https://assets.agilo.com/fashion-starter/product-types/sofas/image.png',
+      ),
+    },
+    {
+      access: 'public',
+      filename: 'arm-chairs.png',
+      mimeType: 'image/png',
+      content: await getImageUrlContent(
+        'https://assets.agilo.com/fashion-starter/product-types/arm-chairs/image.png',
+      ),
+    },
+  ]);
 
   const { result: productTypes } = await createProductTypesWorkflow(
     container,
@@ -496,10 +509,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
     timelessClassicsProductPageImage,
     timelessClassicsProductPageWideImage,
     timelessClassicsProductPageCtaImage,
-  ] = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  ] = await safeUploadFiles([
           {
             access: 'public',
             filename: 'scandinavian-simplicity.png',
@@ -660,10 +670,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
               'https://assets.agilo.com/fashion-starter/collections/timeless-classics/product_page_cta_image.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+        ]);
 
   const { result: collections } = await createCollectionsWorkflow(
     container,
@@ -866,10 +873,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   ]);
 
-  const astridCurveImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const astridCurveImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'astrid-curve.png',
@@ -886,10 +890,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/astrid-curve/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -966,10 +967,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const belimeEstateImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const belimeEstateImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'belime-estate.png',
@@ -986,10 +984,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/belime-estate/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -1087,10 +1082,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const cypressRetreatImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const cypressRetreatImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'cypress-retreat.png',
@@ -1107,10 +1099,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/cypress-retreat/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -1189,10 +1178,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const everlyEstateImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const everlyEstateImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'everly-estate.png',
@@ -1209,10 +1195,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/everly-estate/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -1289,10 +1272,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const havenhillEstateImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const havenhillEstateImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'havenhill-estate.png',
@@ -1309,10 +1289,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/havenhill-estate/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -1391,10 +1368,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const monacoFlairImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const monacoFlairImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'monaco-flair.png',
@@ -1411,10 +1385,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/monaco-flair/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -1510,10 +1481,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const nordicBreezeImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const nordicBreezeImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'nordic-breeze.png',
@@ -1530,10 +1498,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/nordic-breeze/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -1631,10 +1596,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const nordicHavenImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const nordicHavenImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'nordic-haven.png',
@@ -1651,10 +1613,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/nordic-haven/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -1752,10 +1711,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const osloDriftImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const osloDriftImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'oslo-drift.png',
@@ -1772,10 +1728,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/oslo-drift/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -1873,10 +1826,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const osloSerenityImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const osloSerenityImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'oslo-serenity.png',
@@ -1893,10 +1843,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/oslo-serenity/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -1975,10 +1922,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const palomaHavenImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const palomaHavenImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'paloma-haven.png',
@@ -1995,10 +1939,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/paloma-haven/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -2094,10 +2035,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const savannahGroveImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const savannahGroveImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'savannah-grove.png',
@@ -2114,10 +2052,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/savannah-grove/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -2213,10 +2148,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const serenaMeadowImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const serenaMeadowImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'serena-meadow.png',
@@ -2233,10 +2165,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/serena-meadow/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -2334,10 +2263,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const suttonRoyaleImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const suttonRoyaleImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'sutton-royale.png',
@@ -2354,10 +2280,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/sutton-royale/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -2434,10 +2357,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const velarLoftImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const velarLoftImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'velar-loft.png',
@@ -2454,10 +2374,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/velar-loft/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
@@ -2534,10 +2451,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
     },
   });
 
-  const veloraLuxeImages = await uploadFilesWorkflow(container)
-    .run({
-      input: {
-        files: [
+  const veloraLuxeImages = await safeUploadFiles([
           {
             access: 'public',
             filename: 'velora-luxe.png',
@@ -2554,10 +2468,7 @@ Perfect for creating a warm, inviting atmosphere that never goes out of style.`,
               'https://assets.agilo.com/fashion-starter/products/velora-luxe/image1.png',
             ),
           },
-        ],
-      },
-    })
-    .then((res) => res.result);
+  ]);
 
   await createProductsWorkflow(container).run({
     input: {
