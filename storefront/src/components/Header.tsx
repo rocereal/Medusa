@@ -20,7 +20,7 @@ const CartDrawer = dynamic(
 )
 
 export const Header: React.FC = async () => {
-  const regions = await listRegions()
+  const regions = await listRegions().catch(() => [])
 
   const countryOptions = regions
     .map((r) => {
