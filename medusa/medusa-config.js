@@ -21,7 +21,7 @@ module.exports = defineConfig({
     },
   },
   modules: [
-    {
+    ...(process.env.STRIPE_API_KEY ? [{
       resolve: '@medusajs/medusa/payment',
       options: {
         providers: [
@@ -35,7 +35,7 @@ module.exports = defineConfig({
           },
         ],
       },
-    },
+    }] : []),
     {
       resolve: './src/modules/fashion',
     },
@@ -138,7 +138,7 @@ module.exports = defineConfig({
         ],
       },
     },
-    {
+    ...(process.env.MEILISEARCH_HOST && !process.env.MEILISEARCH_HOST.includes('placeholder') ? [{
       resolve: './src/modules/meilisearch',
       /**
        * @type {import('./src/modules/meilisearch/types').MeiliSearchPluginOptions}
@@ -216,7 +216,7 @@ module.exports = defineConfig({
           },
         },
       },
-    },
+    }] : []),
   ],
   plugins: [
     {
