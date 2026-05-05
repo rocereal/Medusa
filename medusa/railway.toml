@@ -3,8 +3,11 @@ builder = "NIXPACKS"
 buildCommand = "yarn install && yarn build"
 
 [deploy]
-startCommand = "yarn medusa db:migrate && yarn start"
+startCommand = "yarn start"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
+
+[[deploy.preDeployCommand]]
+command = "yarn medusa db:migrate"
